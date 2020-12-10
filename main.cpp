@@ -25,7 +25,7 @@ public:
 private:
 	int h;
 	int w;
-	string** map;
+	char** map;
 };
 
 int map::getHeight()
@@ -47,9 +47,9 @@ void map::setWidthHeight(int width, int height)
 void map::setMap()
 {
 	//allocating 2D-array https://blog.naver.com/dic1224/220975113201
-	map = new string* [h];
+	map = new char* [h];
 	for (int i = 0; i < h; i++)
-		map[i] = new string[w];
+		map[i] = new char[w];
 
 	//border setting
 	for (int i = 0; i < h; i++)
