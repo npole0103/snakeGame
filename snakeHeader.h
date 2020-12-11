@@ -4,6 +4,7 @@
 #include <string>
 #include <windows.h>
 #include <conio.h>
+#include <time.h>
 using namespace std;
 
 enum GameState {
