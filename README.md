@@ -16,6 +16,7 @@
 Creating Item beyond the map // 2020/12/12 fix
 
 Up and Down direction is faster than Left and Right direction //2020/12/12 fix
-reason : Because Console size is x 120 and y 30, So fix the gotoxy method x, y -> 2x, y
+
+reason : Because Console size is x 120 and y 30, So I am to fix the gotoxy method x, y -> 2x, y
 
 ---
