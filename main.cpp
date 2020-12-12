@@ -11,7 +11,7 @@ GameState gamestate = InitVeiw;
 
 void gotoxy(int x, int y)
 {
-	COORD pos = { x, y };
+	COORD pos = { 2*x, y };
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
 
@@ -20,10 +20,10 @@ class Snake
 public:
 	Snake() //constructor
 	{
-		xPos[0] = 60; yPos[0] = 15;
-		xPos[1] = 59; yPos[1] = 15;
-		xPos[2] = 58; yPos[2] = 15;
-		xPos[3] = 57; yPos[3] = 15;
+		xPos[0] = 20; yPos[0] = 10;
+		xPos[1] = 20; yPos[1] = 11;
+		xPos[2] = 20; yPos[2] = 12;
+		xPos[3] = 20; yPos[3] = 13;
 		snakeLen = 4;
 	}
 	void initSnakeDraw();
@@ -31,6 +31,10 @@ public:
 	void randomItem();
 	void eatItem();
 	int getKey();
+	int getxPos();
+	int getyPos();
+	int getItemxPos();
+	int getItemyPos();
 	void setKey(int key);
 
 private:
@@ -146,15 +150,19 @@ void initVeiw()
 
 void Snake::initSnakeDraw()
 {
+	//초기 오른쪽 진행
 	key = RIGHT;
-	gotoxy(xPos[0], yPos[0]);
-	cout << "●";
 
-	for (int i = 1; i < snakeLen; i++)
+	//몸통 출력
+	for (int i = snakeLen - 1; i > 0; i--)
 	{
 		gotoxy(xPos[i], yPos[i]);
 		cout << "○";
 	}
+
+	//머리 출력
+	gotoxy(xPos[0], yPos[0]);
+	cout << "●";
 }
 
 // snakeMove 메소드 참고 https://blog.naver.com/whddnr746/221808605143
@@ -162,7 +170,7 @@ void Snake::snakeMove()
 {
 	//꼬리 부분 제거
 	gotoxy(xPos[snakeLen - 1], yPos[snakeLen - 1]);
-	cout << " ";
+	cout << "  ";
 
 	//먹이 먹었을 때 검사
 	eatItem();
@@ -174,7 +182,7 @@ void Snake::snakeMove()
 		xPos[i] = xPos[i - 1];
 		yPos[i] = yPos[i - 1];
 	}
-	//머리부분 몸통
+	//현재 머리부분 몸통
 	gotoxy(xPos[0], yPos[0]);
 	cout << "○";
 
@@ -193,6 +201,7 @@ void Snake::snakeMove()
 		--xPos[0];
 		break;
 	}
+	//바뀐 머리 좌표로 머리 출력
 	gotoxy(xPos[0], yPos[0]);
 	cout << "●";
 }
@@ -204,26 +213,30 @@ void Snake::randomItem()
 
 	while (quit)
 	{
-		itemxPos = (rand() % (WIDTH - 2)) + 1;
+		itemxPos = (rand() % (WIDTH/2 - 2)) + 1;
 		itemyPos = (rand() % (HEIGHT - 2)) + 1;
 
 		for (int i = 1; i < snakeLen; i++)
 		{
+			//몸통과 좌표가 겹친다면
 			if (xPos[i] == itemxPos && yPos[i] == itemyPos)
 				break;
+			//몸통 검사 부분 if문 맨 마지막이라면
 			if (i == snakeLen - 1)
-				quit = false;
+				quit = false; //while문 탈출
 		}
 	}
 	gotoxy(itemxPos, itemyPos);
-	cout << "■";
+	cout << "■■";
+
 }
 
 void Snake::eatItem()
 {
+	//일반적으로 아이템을 먹었을 때
 	if (xPos[0] == itemxPos && yPos[0] == itemyPos)
 	{
-		randomItem();
+		this->randomItem();
 		if (snakeLen < MAXLEN - 1)
 			snakeLen++;
 	}
@@ -234,6 +247,26 @@ int Snake::getKey()
 	return key;
 }
 
+int Snake::getxPos()
+{
+	return xPos[0];
+}
+
+int Snake::getyPos()
+{
+	return yPos[0];
+}
+
+int Snake::getItemxPos()
+{
+	return itemxPos;
+}
+
+int Snake::getItemyPos()
+{
+	return itemyPos;
+}
+
 void Snake::setKey(int key)
 {
 	this->key = key;
@@ -242,9 +275,9 @@ void Snake::setKey(int key)
 int main()
 {
 	Snake s1;
-	Map m1;
-	m1.setWidthHeight(WIDTH, HEIGHT);
-	m1.setMap();
+	//Map m1;
+	//m1.setWidthHeight(WIDTH, HEIGHT);
+	//m1.setMap();
 
 	while (1)
 	{
@@ -254,13 +287,11 @@ int main()
 			initVeiw();
 			break;
 		case GameStart:
-			m1.printMap();
+			//m1.printMap();
 			s1.initSnakeDraw();
 			s1.randomItem();
-			gotoxy(0, 0);
-
 			//initSnakeDraw
-			
+
 			//snake
 			while (1)
 			{
@@ -289,8 +320,14 @@ int main()
 						}
 					}
 				}
-				Sleep(100);
+				Sleep(200);
 				s1.snakeMove();
+
+				gotoxy(10, 25);
+				cout << "item x : "<< s1.getItemxPos();
+				cout << "item y : "<< s1.getItemyPos();
+				cout << "head x : " << s1.getxPos();
+				cout << "head y : " << s1.getyPos();
 			}
 			break;
 		case GameOver:
