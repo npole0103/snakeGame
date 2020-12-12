@@ -1,19 +1,17 @@
 #pragma once
 #include "snakeHeader.h"
 
-#define WIDTH 120
-#define HEIGHT 30
-#define MAXLEN 50
-
+//메인화면 글자 뼈대 출처 https://blog.naver.com/forcommang/221495736927
 //방향키 입력 참고 https://blog.naver.com/sharonichoya/220875372940
+//snakeMove 메소드 참고 https://blog.naver.com/whddnr746/221808605143
+//2차원 heap 메모리에 할당하는 법 https://blog.naver.com/dic1224/220975113201
+
+//easy = 6 / normal = 4 / hard = 3
+int mode = 4;
+int bestLen = NULL;
+int bestSpeed = NULL;
 
 GameState gamestate = InitVeiw;
-
-void gotoxy(int x, int y)
-{
-	COORD pos = { 2*x, y };
-	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
-}
 
 class Snake
 {
@@ -24,30 +22,250 @@ public:
 		xPos[1] = 20; yPos[1] = 11;
 		xPos[2] = 20; yPos[2] = 12;
 		xPos[3] = 20; yPos[3] = 13;
-		snakeLen = 4;
+		xPos[4] = 20; yPos[4] = 14;
+		xPos[5] = 20; yPos[5] = 15;
+		snakeLen = 6;
 	}
 	void initSnakeDraw();
 	void snakeMove();
 	void randomItem();
 	void eatItem();
+	void collisionCheck();
+	void printSnakeInfo();
+	void restart();
+
+	//setter getter method
+	int getSnakeLen();
+	void setKey(int key);
 	int getKey();
 	int getxPos();
 	int getyPos();
 	int getItemxPos();
 	int getItemyPos();
-	void setKey(int key);
 
 private:
-	//뱀 좌표
+	//snake coordinates, length and direction
 	int xPos[MAXLEN];
 	int yPos[MAXLEN];
 	int snakeLen;
-	int key; //현재 진행방향
+	int key = NULL;
 
-	//Item 좌표
+	//item coordinates
 	int itemxPos;
 	int itemyPos;
 };
+
+void Snake::initSnakeDraw()
+{
+	//initialize direction RIGHT
+	if (key == NULL)
+		key = RIGHT;
+	else //if key data is exist - PAUSE CASE
+		key == getKey();
+
+	//print the initial body
+	for (int i = snakeLen - 1; i > 0; i--)
+	{
+		gotoxy(xPos[i], yPos[i]);
+		cout << "○";
+	}
+
+	//head print
+	gotoxy(xPos[0], yPos[0]);
+	cout << "●";
+}
+
+void Snake::snakeMove()
+{
+	//erase the tail
+	gotoxy(xPos[snakeLen - 1], yPos[snakeLen - 1]);
+	cout << "  ";
+
+	collisionCheck();
+
+	eatItem();
+
+	//push the coordinates forward one by one
+	for (int i = snakeLen - 1; i > 0; i--)
+	{
+		xPos[i] = xPos[i - 1];
+		yPos[i] = yPos[i - 1];
+	}
+	//current head coordinates is changed body coordinates
+	gotoxy(xPos[0], yPos[0]);
+	cout << "○";
+
+	switch (key)
+	{
+	case UP:
+		--yPos[0];
+		break;
+	case DOWN:
+		++yPos[0];
+		break;
+	case RIGHT:
+		++xPos[0];
+		break;
+	case LEFT:
+		--xPos[0];
+		break;
+	}
+	//new head coordinates print
+	gotoxy(xPos[0], yPos[0]);
+	cout << "●";
+}
+
+void Snake::randomItem()
+{
+	//set the seed for random
+	srand((unsigned int)time(NULL));
+
+	bool quit = true;
+
+	while (quit)
+	{
+		//console defalut size 120 / 30
+		itemxPos = (rand() % (WIDTH / 2 - 2)) + 1;
+		itemyPos = (rand() % (HEIGHT - 2)) + 1;
+
+		for (int i = 1; i < snakeLen; i++)
+		{
+			//If the head coordinates and the body coordinates matched.
+			if (xPos[i] == itemxPos && yPos[i] == itemyPos)
+				break;
+			//If there's nothing wrong with the tail.
+			if (i == snakeLen - 1)
+				quit = false; //while문 탈출
+		}
+	}
+	gotoxy(itemxPos, itemyPos);
+	cout << "★";
+
+}
+
+void Snake::eatItem()
+{
+	if (xPos[0] == itemxPos && yPos[0] == itemyPos)
+	{
+		this->randomItem();
+		if (snakeLen < MAXLEN - 1)
+			snakeLen++;
+	}
+}
+
+void Snake::collisionCheck()
+{
+	//colliison the border 
+	if (xPos[0] == WIDTH / 2 || xPos[0] == 0 || yPos[0] == HEIGHT - 1 || yPos[0] == 0)
+	{
+		if (bestLen == NULL && bestSpeed == NULL)
+		{
+			bestLen = snakeLen;
+			bestSpeed = snakeLen / mode;
+		}
+		if (snakeLen >= bestLen)
+			bestLen = snakeLen;
+		if ((snakeLen / mode) == bestSpeed)
+			bestSpeed = (snakeLen / mode);
+
+		gamestate = GameOver;
+	}
+
+	//collision one's own body
+	for (int i = 1; i < snakeLen; i++)
+		if (xPos[0] == xPos[i] && yPos[0] == yPos[i])
+		{
+			if (bestLen == NULL && bestSpeed == NULL)
+			{
+				bestLen = snakeLen;
+				bestSpeed = snakeLen / mode;
+			}
+			if (snakeLen >= bestLen)
+				bestLen = snakeLen;
+			if ((snakeLen / mode) == bestSpeed)
+				bestSpeed = (snakeLen / mode);
+
+			gamestate = GameOver;
+		}
+}
+
+void Snake::printSnakeInfo()
+{
+	//current mode
+	gotoxy(52, 4);
+	if (mode == 6)
+		cout << "Mode : Easy";
+	else if (mode == 4)
+		cout << "Mode : Normal";
+	else if (mode == 3)
+		cout << "Mode : Hard";
+
+	//current snakeLen
+	gotoxy(52, 7);
+	cout << "SNAKE LEN : "<< snakeLen;
+
+	//current speed
+	gotoxy(52, 10);
+	cout << "SPEED : " << (snakeLen/mode);
+
+	//Restart
+	gotoxy(52, 18);
+	cout << "PAUSE : P";
+
+	//Exit
+	gotoxy(52, 20);
+	cout << "EXIT : X";
+
+	//block processing
+	gotoxy(59, 29);
+	cout << " ";
+}
+
+void Snake::restart()
+{
+	xPos[0] = 20; yPos[0] = 10;
+	xPos[1] = 20; yPos[1] = 11;
+	xPos[2] = 20; yPos[2] = 12;
+	xPos[3] = 20; yPos[3] = 13;
+	xPos[4] = 20; yPos[4] = 14;
+	xPos[5] = 20; yPos[5] = 15;
+	snakeLen = 6;
+}
+
+int Snake::getSnakeLen()
+{
+	return snakeLen;
+}
+
+int Snake::getKey()
+{
+	return key;
+}
+
+int Snake::getxPos()
+{
+	return xPos[0];
+}
+
+int Snake::getyPos()
+{
+	return yPos[0];
+}
+
+int Snake::getItemxPos()
+{
+	return itemxPos;
+}
+
+int Snake::getItemyPos()
+{
+	return itemyPos;
+}
+
+void Snake::setKey(int key)
+{
+	this->key = key;
+}
 
 class Map
 {
@@ -64,16 +282,6 @@ private:
 	int w;
 	char** map;
 };
-
-int Map::getHeight()
-{
-	return h;
-}
-
-int Map::getWidth()
-{
-	return w;
-}
 
 void Map::setWidthHeight(int width, int height)
 {
@@ -108,6 +316,16 @@ void Map::setMap()
 	}
 }
 
+int Map::getHeight()
+{
+	return h;
+}
+
+int Map::getWidth()
+{
+	return w;
+}
+
 void Map::printMap()
 {
 	for (int i = 0; i < h; i++)
@@ -118,166 +336,126 @@ void Map::printMap()
 	}
 }
 
-void initVeiw()
+
+//normal method
+void printSnakeText_1()
 {
 	gotoxy(0, 0);
 
-	//글자 뼈대 출처 https://blog.naver.com/forcommang/221495736927
 	cout << endl << endl << endl << endl;
-	cout << "		■■■  ■     ■     ■    ■  ■ ■■■   ■■■     ■    ■      ■  ■■■" << endl;
-	cout << "		■      ■■   ■   ■  ■  ■ ■  ■      ■        ■  ■  ■■  ■■  ■	" << endl;
-	cout << "		■■■  ■  ■ ■  ■    ■ ■■   ■■■  ■  ■■ ■    ■ ■ ■■ ■  ■■■" << endl;
-	cout << "		    ■  ■   ■■  ■■■■ ■ ■  ■      ■    ■ ■■■■ ■  ■  ■  ■    " << endl;
-	cout << "		■■■  ■     ■  ■    ■ ■  ■ ■■■   ■■■  ■    ■ ■      ■  ■■■" << endl;
-	
+	cout << "   		   ■■■  ■     ■     ■    ■  ■ ■■■   ■■■     ■    ■      ■  ■■■" << endl;
+	cout << "   		   ■      ■■   ■   ■  ■  ■ ■  ■      ■        ■  ■  ■■  ■■  ■	" << endl;
+	cout << "   		   ■■■  ■  ■ ■  ■    ■ ■■   ■■■  ■  ■■ ■    ■ ■ ■■ ■  ■■■" << endl;
+	cout << "   		       ■  ■   ■■  ■■■■ ■ ■  ■      ■    ■ ■■■■ ■  ■  ■  ■    " << endl;
+	cout << "   		   ■■■  ■     ■  ■    ■ ■  ■ ■■■   ■■■  ■    ■ ■      ■  ■■■" << endl;
 
-	cout << endl << endl << endl << endl << endl << endl << endl << endl;
-	cout << "					   Made by SU HEON KIM" << endl;
-	cout << endl << endl << endl << endl << endl << endl;
-	cout << "					Press any key to keyboard" << endl;
+	cout << endl << endl << endl << endl << endl << endl << endl;
+	cout << "   					         Made by SU HEON KIM" << endl;
+	cout << endl << endl << endl << endl << endl;
+	cout << "                                             You Should Select the Mode" << endl << endl;
+	cout << "                                          Easy : E / Normal : N / Hard : H" << endl << endl;
+	cout << "   					  Press E or N or H key to keyboard" << endl;
+}
 
-	while (_kbhit())
+void printSnakeText_2()
+{
+	gotoxy(0, 0);
+
+	cout << endl << endl << endl << endl;
+	cout << "   		   □□□  □     □     □    □  □ □□□   □□□     □    □      □  □□□" << endl;
+	cout << "   		   □      □□   □   □  □  □ □  □      □        □  □  □□  □□  □	" << endl;
+	cout << "   		   □□□  □  □ □  □    □ □□   □□□  □  □□ □    □ □ □□ □  □□□" << endl;
+	cout << "   		       □  □   □□  □□□□ □ □  □      □    □ □□□□ □  □  □  □    " << endl;
+	cout << "   		   □□□  □     □  □    □ □  □ □□□   □□□  □    □ □      □  □□□" << endl;
+
+	cout << endl << endl << endl << endl << endl << endl << endl;
+	cout << "   					         Made by SU HEON KIM" << endl;
+	cout << endl << endl << endl << endl << endl;
+	cout << "                                             You Should Select the Mode" << endl << endl;
+	cout << "                                          Easy : E / Normal : N / Hard : H" << endl << endl;
+	cout << "   					  Press E or N or H key to keyboard" << endl;
+}
+
+void initVeiw()
+{
+	while (1)
 	{
-		system("cls");
-		gamestate = GameStart;
-		
-		//erase buffer
-		int a = _getch();
+		Sleep(150);
+		printSnakeText_1();
+		Sleep(150);
+		printSnakeText_2();
+		Sleep(150);
+		if (_kbhit())
+			break;
+	}
+
+	while (1)
+	{
+		int key;
+		if (_kbhit())
+		{
+			key = _getch();
+
+			if (key == 69 || key == 101) //easy mode
+			{
+				mode = 6;
+				system("cls");
+				gamestate = GameStart;
+				break;
+			}
+			else if (key == 78 || key == 110) // normal mode
+			{
+				mode = 4;
+				system("cls");
+				gamestate = GameStart;
+				break;
+			}
+			else if (key == 72 || key == 104) // hard mode
+			{
+				mode = 3;
+				system("cls");
+				gamestate = GameStart;
+				break;
+			}
+			else
+			{
+				int a = _getch();
+				//erase buffer
+				//Because UP key is 224 + 72
+				//If int a = _getch() is not exist, its program would excute hard mode accroding to 72
+				continue;
+			}
+			
+		}
 	}
 
 	Sleep(300);
 }
 
-void Snake::initSnakeDraw()
+void gameoverVeiw()
 {
-	//초기 오른쪽 진행
-	key = RIGHT;
+	gotoxy(24, 8);
+	cout << "        GAMEOVER";
 
-	//몸통 출력
-	for (int i = snakeLen - 1; i > 0; i--)
-	{
-		gotoxy(xPos[i], yPos[i]);
-		cout << "○";
-	}
+	gotoxy(24, 10);
+	cout << "    Your Best Score";
 
-	//머리 출력
-	gotoxy(xPos[0], yPos[0]);
-	cout << "●";
-}
+	gotoxy(24, 12);
+	cout << "     BEST Length : " << bestLen;
 
-// snakeMove 메소드 참고 https://blog.naver.com/whddnr746/221808605143
-void Snake::snakeMove()
-{
-	//꼬리 부분 제거
-	gotoxy(xPos[snakeLen - 1], yPos[snakeLen - 1]);
-	cout << "  ";
+	gotoxy(24, 14);
+	cout << "     BEST Speed : " << bestSpeed;
 
-	//먹이 먹었을 때 검사
-	eatItem();
-
-	//충돌 검사
-
-	for (int i = snakeLen - 1; i > 0; i--)
-	{
-		xPos[i] = xPos[i - 1];
-		yPos[i] = yPos[i - 1];
-	}
-	//현재 머리부분 몸통
-	gotoxy(xPos[0], yPos[0]);
-	cout << "○";
-
-	switch (key)
-	{
-	case UP:
-		--yPos[0];
-		break;
-	case DOWN:
-		++yPos[0];
-		break;
-	case RIGHT:
-		++xPos[0];
-		break;
-	case LEFT:
-		--xPos[0];
-		break;
-	}
-	//바뀐 머리 좌표로 머리 출력
-	gotoxy(xPos[0], yPos[0]);
-	cout << "●";
-}
-
-void Snake::randomItem()
-{
-	bool quit = true;
-	srand((unsigned int)time(NULL));
-
-	while (quit)
-	{
-		itemxPos = (rand() % (WIDTH/2 - 2)) + 1;
-		itemyPos = (rand() % (HEIGHT - 2)) + 1;
-
-		for (int i = 1; i < snakeLen; i++)
-		{
-			//몸통과 좌표가 겹친다면
-			if (xPos[i] == itemxPos && yPos[i] == itemyPos)
-				break;
-			//몸통 검사 부분 if문 맨 마지막이라면
-			if (i == snakeLen - 1)
-				quit = false; //while문 탈출
-		}
-	}
-	gotoxy(itemxPos, itemyPos);
-	cout << "■■";
-
-}
-
-void Snake::eatItem()
-{
-	//일반적으로 아이템을 먹었을 때
-	if (xPos[0] == itemxPos && yPos[0] == itemyPos)
-	{
-		this->randomItem();
-		if (snakeLen < MAXLEN - 1)
-			snakeLen++;
-	}
-}
-
-int Snake::getKey()
-{
-	return key;
-}
-
-int Snake::getxPos()
-{
-	return xPos[0];
-}
-
-int Snake::getyPos()
-{
-	return yPos[0];
-}
-
-int Snake::getItemxPos()
-{
-	return itemxPos;
-}
-
-int Snake::getItemyPos()
-{
-	return itemyPos;
-}
-
-void Snake::setKey(int key)
-{
-	this->key = key;
+	gotoxy(24, 17);
+	cout << "CONTINUE ? : R / EXIT : X";
 }
 
 int main()
 {
 	Snake s1;
-	//Map m1;
-	//m1.setWidthHeight(WIDTH, HEIGHT);
-	//m1.setMap();
+	Map m1;
+	m1.setWidthHeight(WIDTH, HEIGHT);
+	m1.setMap();
 
 	while (1)
 	{
@@ -286,13 +464,23 @@ int main()
 		case InitVeiw:
 			initVeiw();
 			break;
+		case Pause:
+			while (1)
+				if (_kbhit())
+				{
+					system("cls");
+					gamestate = GameStart;
+					int a = _getch();
+					//erase buffer
+					Sleep(300);
+					break;
+				}
 		case GameStart:
-			//m1.printMap();
+
+			m1.printMap();
 			s1.initSnakeDraw();
 			s1.randomItem();
-			//initSnakeDraw
-
-			//snake
+		
 			while (1)
 			{
 				int key;
@@ -300,56 +488,85 @@ int main()
 				if (_kbhit())
 				{
 					key = _getch();
+					
+					//direction key processing
 					if (key == 224)
 					{
 						key = _getch();
 						switch (key)
 						{
-						// 화살표 방향 받았을 때만 통과
+						// UP || DOWN || RIGHT || LEFT is only pass this switch loop
 						case UP:
 						case DOWN:
 						case RIGHT:
 						case LEFT:
-						
-						//반대 방향에 대한 예외처리
+
+							//exception for opposite direction
 							if ((s1.getKey() == UP && key == DOWN) || (s1.getKey() == DOWN && key == UP) ||
 								(s1.getKey() == RIGHT && key == LEFT) || (s1.getKey() == LEFT && key == RIGHT))
 								break;
-						//key값을 Snake에 넘겨줌
+							//set the direction for snake
 							s1.setKey(key);
 						}
 					}
+					//input X = EXIT
+					else if (key == 88 || key == 120)
+					{
+						gamestate = GameOver;
+						break;
+					}
+					//input P - PAUSE
+					else if (key == 80 || key == 112)
+					{
+						gotoxy(52, 15);
+						cout << "press any key";
+						gamestate = Pause;
+						break;
+					}
 				}
-				Sleep(200);
-				s1.snakeMove();
+				Sleep(150/(s1.getSnakeLen()/mode));
 
-				gotoxy(10, 25);
-				cout << "item x : "<< s1.getItemxPos();
-				cout << "item y : "<< s1.getItemyPos();
-				cout << "head x : " << s1.getxPos();
-				cout << "head y : " << s1.getyPos();
+				s1.snakeMove();
+				s1.printSnakeInfo();
+
+				if (gamestate == GameOver)
+					break;
 			}
 			break;
 		case GameOver:
-			cout << "gameover" << endl;
+
+			system("cls");
+
+			gameoverVeiw();
+
+			while (1)
+			{
+				int key;
+				if (_kbhit())
+				{
+					key = _getch();
+
+					//Restart
+					if (key == 82 || key == 114)
+					{
+						s1.restart();
+						s1.setKey(RIGHT);
+						gamestate = InitVeiw;
+						system("cls");
+						break;
+					}
+
+					//Exit
+					else if (key == 88 || key == 120)
+					{
+						exit(1);
+					}
+				}
+			}
+
 			break;
 		}
 	}
 
-	//int key = _getch();
-	//switch (key)
-	//{
-	//case RIGHT:
-	//	cout << "right" << endl;
-	//	break;
-	//case LEFT:
-	//	cout << "left" << endl;
-	//	break;
-	//case DOWN:
-	//	cout << "down" << endl;
-	//	break;
-	//case UP:
-	//	cout << "up" << endl;
-	//	break;
-	//}
+	return 0;
 }
