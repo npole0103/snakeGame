@@ -3,15 +3,15 @@
 
 //메인화면 글자 뼈대 출처 https://blog.naver.com/forcommang/221495736927
 //방향키 입력 참고 https://blog.naver.com/sharonichoya/220875372940
-//snakeMove 메소드 참고 https://blog.naver.com/whddnr746/221808605143
-//2차원 heap 메모리에 할당하는 법 https://blog.naver.com/dic1224/220975113201
+//snakeMove / gotoxy 메소드  참고 https://blog.naver.com/whddnr746/221808605143
+//2차원 배열 heap 메모리에 할당하는 법 https://blog.naver.com/dic1224/220975113201
 
 //easy = 6 / normal = 4 / hard = 3
 int mode = 4;
 int bestLen = NULL;
 int bestSpeed = NULL;
 
-GameState gamestate = InitVeiw;
+GameState gameState = InitVeiw;
 
 class Snake
 {
@@ -60,8 +60,6 @@ void Snake::initSnakeDraw()
 	//initialize direction RIGHT
 	if (key == NULL)
 		key = RIGHT;
-	else //if key data is exist - PAUSE CASE
-		key == getKey();
 
 	//print the initial body
 	for (int i = snakeLen - 1; i > 0; i--)
@@ -135,7 +133,10 @@ void Snake::randomItem()
 				break;
 			//If there's nothing wrong with the tail.
 			if (i == snakeLen - 1)
-				quit = false; //while문 탈출
+				quit = false; //while loop break
+
+			// this code is equal
+			//quit = (i != (snakeLen - 1));
 		}
 	}
 	gotoxy(itemxPos, itemyPos);
@@ -150,6 +151,9 @@ void Snake::eatItem()
 		this->randomItem();
 		if (snakeLen < MAXLEN - 1)
 			snakeLen++;
+
+		//this code is equal
+		//snakeLen += (snakeLen < MAXLEN - 1);
 	}
 }
 
@@ -168,7 +172,7 @@ void Snake::collisionCheck()
 		if ((snakeLen / mode) == bestSpeed)
 			bestSpeed = (snakeLen / mode);
 
-		gamestate = GameOver;
+		gameState = GameOver;
 	}
 
 	//collision one's own body
@@ -185,7 +189,7 @@ void Snake::collisionCheck()
 			if ((snakeLen / mode) == bestSpeed)
 				bestSpeed = (snakeLen / mode);
 
-			gamestate = GameOver;
+			gameState = GameOver;
 		}
 }
 
@@ -276,6 +280,7 @@ public:
 	void setWidthHeight(int w, int h);
 	void setMap();
 	void printMap();
+	~Map(); //destructor
 
 private:
 	int h;
@@ -334,6 +339,11 @@ void Map::printMap()
 			cout << map[i][j];
 		cout << endl;
 	}
+}
+
+Map::~Map()
+{
+	delete[] map;
 }
 
 
@@ -400,21 +410,21 @@ void initVeiw()
 			{
 				mode = 6;
 				system("cls");
-				gamestate = GameStart;
+				gameState = GameStart;
 				break;
 			}
 			else if (key == 78 || key == 110) // normal mode
 			{
 				mode = 4;
 				system("cls");
-				gamestate = GameStart;
+				gameState = GameStart;
 				break;
 			}
 			else if (key == 72 || key == 104) // hard mode
 			{
 				mode = 3;
 				system("cls");
-				gamestate = GameStart;
+				gameState = GameStart;
 				break;
 			}
 			else
@@ -459,7 +469,7 @@ int main()
 
 	while (1)
 	{
-		switch (gamestate)
+		switch (gameState)
 		{
 		case InitVeiw:
 			initVeiw();
@@ -469,12 +479,13 @@ int main()
 				if (_kbhit())
 				{
 					system("cls");
-					gamestate = GameStart;
+					gameState = GameStart;
 					int a = _getch();
 					//erase buffer
 					Sleep(300);
 					break;
 				}
+			break;
 		case GameStart:
 
 			m1.printMap();
@@ -512,7 +523,7 @@ int main()
 					//input X = EXIT
 					else if (key == 88 || key == 120)
 					{
-						gamestate = GameOver;
+						gameState = GameOver;
 						break;
 					}
 					//input P - PAUSE
@@ -520,7 +531,7 @@ int main()
 					{
 						gotoxy(52, 15);
 						cout << "press any key";
-						gamestate = Pause;
+						gameState = Pause;
 						break;
 					}
 				}
@@ -529,7 +540,7 @@ int main()
 				s1.snakeMove();
 				s1.printSnakeInfo();
 
-				if (gamestate == GameOver)
+				if (gameState == GameOver)
 					break;
 			}
 			break;
@@ -551,7 +562,7 @@ int main()
 					{
 						s1.restart();
 						s1.setKey(RIGHT);
-						gamestate = InitVeiw;
+						gameState = InitVeiw;
 						system("cls");
 						break;
 					}
